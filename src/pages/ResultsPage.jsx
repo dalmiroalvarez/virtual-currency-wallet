@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ResultCard from '../components/ResultCard'
 import { useNavigate } from 'react-router-dom'
+import { fetchExchangeRates } from '../services/api'
 
 const ResultsPage = ({ balance, currencies }) => {
   const [exchangeRates, setExchangeRates] = useState({})
@@ -14,23 +15,18 @@ const ResultsPage = ({ balance, currencies }) => {
       return
     }
 
-    const fetchExchangeRates = async () => {
+    const loadRates = async () => {
       try {
-        const rates = {}
-        for (const currency of currencies) {
-          const response = await fetch(`https://api.coinbase.com/v2/exchange-rates?currency=EUR`)
-          const data = await response.json()
-          rates[currency] = data.data.rates[currency]
-        }
+        const rates = await fetchExchangeRates(currencies)
         setExchangeRates(rates)
-        setIsLoading(false)
       } catch (err) {
-        setError('Error al obtener las tasas de cambio')
+        setError('Error al obtener las tasas de cambio. Intente nuevamente.')
+      } finally {
         setIsLoading(false)
       }
     }
 
-    fetchExchangeRates()
+    loadRates()
   }, [currencies, navigate])
 
   if (isLoading) {

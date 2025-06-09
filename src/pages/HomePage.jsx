@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import CurrencySelector from '../components/CurrencySelector'
 import ErrorMessage from '../components/ErrorMessage'
+import { fetchCurrencies } from '../services/api'
+import { validateBalance, validateCurrencies, isValidPositiveNumber, clearErrorWithTimeout } from '../utils'
 
 const HomePage = ({ onSubmit, error, setError }) => {
   const [balance, setBalance] = useState('')
@@ -9,31 +11,52 @@ const HomePage = ({ onSubmit, error, setError }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchCurrencies = async () => {
+    const loadCurrencies = async () => {
       try {
-        const response = await fetch('https://api.coinbase.com/v2/currencies')
-        const data = await response.json()
-        setAvailableCurrencies(data.data.filter(c => c.id !== 'EUR'))
-        setIsLoading(false)
+        const currencies = await fetchCurrencies()
+        setAvailableCurrencies(currencies)
       } catch (err) {
         setError('Error al cargar las divisas. Intente nuevamente.')
+        clearErrorWithTimeout(setError)
+      } finally {
         setIsLoading(false)
       }
     }
 
-    fetchCurrencies()
+    loadCurrencies()
   }, [setError])
+
+  const handleBalanceChange = (e) => {
+    const value = e.target.value
+    
+    if (isValidPositiveNumber(value)) {
+      setBalance(value)
+      if (error === 'No se permiten valores negativos') {
+        setError('')
+      }
+    } else {
+      setError('No se permiten valores negativos')
+      clearErrorWithTimeout(setError)
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (balance <= 0) {
-      setError('El saldo debe ser mayor a 0')
+    
+    const balanceError = validateBalance(balance)
+    if (balanceError) {
+      setError(balanceError)
+      clearErrorWithTimeout(setError)
       return
     }
-    if (selectedCurrencies.length === 0) {
-      setError('Seleccione al menos una divisa')
+    
+    const currencyError = validateCurrencies(selectedCurrencies)
+    if (currencyError) {
+      setError(currencyError)
+      clearErrorWithTimeout(setError)
       return
     }
+    
     setError('')
     onSubmit(parseFloat(balance), selectedCurrencies)
   }
@@ -51,9 +74,9 @@ const HomePage = ({ onSubmit, error, setError }) => {
             id="balance"
             type="number"
             step="0.01"
-            min="0.01"
+            min="0"
             value={balance}
-            onChange={(e) => setBalance(e.target.value)}
+            onChange={handleBalanceChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: 100.00"
           />
@@ -71,7 +94,9 @@ const HomePage = ({ onSubmit, error, setError }) => {
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full mt-6 py-2 px-4 rounded-md text-white font-medium ${isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+          className={`w-full mt-6 py-2 px-4 rounded-md text-white font-medium ${
+            isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+          } cursor-pointer`}
         >
           {isLoading ? 'Cargando...' : 'Ver resultados'}
         </button>
