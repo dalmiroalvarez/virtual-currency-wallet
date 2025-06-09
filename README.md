@@ -1,51 +1,136 @@
 # Cartera Virtual de Divisas
 
-Aplicación web desarrollada con React.js y Vite que permite a los usuarios gestionar un saldo en euros (EUR) y visualizar su equivalente en otras divisas utilizando la API de Coinbase.
+Una aplicación web sencilla para convertir euros a diferentes divisas extranjeras. Te permite ingresar un saldo inicial y ver su equivalencia en las monedas que elijas.
 
-## Características principales
+## ¿Qué hace esta aplicación?
 
-- **Interfaz intuitiva**: Diseño minimalista y funcional con Tailwind CSS
-- **Gestión de saldo**: Introducción de saldo inicial con validación
-- **Selección de divisas**: Hasta 3 divisas de una lista dinámica obtenida de Coinbase
-- **Conversión en tiempo real**: Tasas de cambio actualizadas al momento de la consulta
-- **Manejo de errores**: Feedback claro al usuario en caso de problemas
+La idea es bastante simple: introduces cuántos euros tienes, seleccionas las divisas que te interesan, y la app te muestra cuánto dinero tendrías en cada una de esas monedas. Es útil si estás planeando un viaje o simplemente tienes curiosidad sobre el valor de tu dinero en otros países.
+
+## Funcionalidades principales
+
+### Conversión de divisas
+- Ingresa tu saldo en euros (acepta decimales)
+- Selecciona múltiples divisas de una lista completa
+- Ve los resultados con las tasas de cambio actualizadas
+
+### Persistencia de datos
+La aplicación recuerda tus datos aunque cierres el navegador. Si habías puesto 500 euros y seleccionado dólares y yenes, al volver a entrar todo estará como lo dejaste. Esto lo logramos usando localStorage del navegador.
+
+### Caché inteligente
+Para no sobrecargar la API de tasas de cambio (y hacer la app más rápida), implementamos un sistema de caché:
+- Las divisas disponibles se guardan por 5 minutos
+- Las tasas de cambio se cachean por 2 minutos
+- Si hay problemas de conexión, usa los datos guardados anteriormente
+
+### Validaciones
+La aplicación valida que:
+- El saldo sea un número positivo
+- Se haya seleccionado al menos una divisa
+- Los datos ingresados sean correctos antes de procesar
 
 ## Tecnologías utilizadas
 
-- **React.js**: Biblioteca principal para la construcción de la interfaz
-- **Vite**: Entorno de desarrollo rápido y optimizado
-- **Tailwind CSS**: Framework CSS para estilizado rápido y consistente
-- **API de Coinbase**: Obtención de divisas disponibles y tasas de cambio
-- **React Router**: Navegación entre páginas
-- **LocalStorage**: Persistencia opcional de datos entre sesiones
+- **React** con hooks (useState, useEffect)
+- **React Router** para la navegación entre páginas
+- **Tailwind CSS** para los estilos
+- **localStorage** para persistir datos
+- **API de exchange rates** para obtener tasas actualizadas
 
-## Decisiones de diseño
+## Estructura del proyecto
 
-Opté por una arquitectura modular que separa claramente:
-- **Componentes UI**: Reutilizables y con responsabilidad única
-- **Páginas**: Contenedores principales de la aplicación
-- **Servicios**: Lógica de comunicación con APIs externas
-- **Utils**: Funcionalidades transversales como el manejo de almacenamiento local
+Organicé el código en carpetas para mantener todo ordenado:
 
-El diseño responsive y accesible fue una prioridad, asegurando que la aplicación sea usable en cualquier dispositivo.
+```
+src/
+├── components/          # Componentes reutilizables
+├── pages/              # Páginas principales
+├── services/           # Llamadas a APIs
+├── utils/              # Funciones de utilidad y validaciones
+```
 
-## Cómo ejecutar el proyecto
+La carpeta `utils` fue clave para separar la lógica de validación del código de los componentes. Ahí tienes funciones como `validateBalance`, `isValidPositiveNumber`, etc. También las funciones para manejar localStorage están separadas en su propio archivo.
 
-1. Clonar el repositorio
-2. Instalar dependencias: `npm install`
-3. Ejecutar en desarrollo: `npm run dev`
-4. Abrir en el navegador: `http://localhost:5173`
+## Diseño responsive
 
-## Posibles mejoras
+La aplicación funciona bien en móviles, tablets y escritorio. Usé clases de Tailwind como `max-w-md mx-auto` para centrar el contenido y mantener un ancho adecuado en pantallas grandes, mientras que en móviles ocupa todo el ancho disponible.
 
-1. **Testing**: Implementar pruebas unitarias y de integración con Jest y Testing Library
-2. **Animaciones**: Transiciones suaves entre páginas y al cargar datos
-3. **Gráficos**: Visualización histórica de tasas de cambio
-4. **Autenticación**: Permitir a usuarios guardar sus preferencias
-5. **Notificaciones**: Alertas cuando las tasas de cambio varíen significativamente
-6. **Optimización**: Implementar caché para las llamadas a la API
-7. **Internacionalización**: Soporte para múltiples idiomas
+## Cómo mejorar la aplicación
 
-## Conclusión
+### Mejoras técnicas que implementaría
 
-Este proyecto demuestra habilidades fundamentales en el desarrollo frontend con React, consumo de APIs REST, manejo de estado y creación de interfaces de usuario efectivas. El código está estructurado para facilitar el mantenimiento y la escalabilidad, siguiendo buenas prácticas de desarrollo.
+**1. Manejo de errores más robusto**
+- Componente de error boundary para capturar errores de React
+- Retry automático cuando fallan las peticiones
+- Mensajes de error más específicos según el tipo de problema
+
+**2. Performance**
+- Lazy loading para las páginas
+- Memoización de componentes pesados con React.memo
+- Debounce en la búsqueda de divisas si agregamos esa funcionalidad
+
+**3. Testing**
+- Tests unitarios para las funciones de utils
+- Tests de integración para los flujos principales
+- Tests de los custom hooks
+
+**4. Accesibilidad**
+- Mejor soporte para lectores de pantalla
+- Navegación por teclado más fluida
+- Contraste de colores mejorado
+
+### Funcionalidades nuevas
+
+**1. Historial de conversiones**
+- Guardar las conversiones anteriores
+- Gráficos simples de evolución de tasas
+- Exportar historial a CSV
+
+**2. Calculadora avanzada**
+- Conversión bidireccional (no solo desde EUR)
+- Calculadora integrada para operaciones rápidas
+- Favoritos para divisas más usadas
+
+**3. Notificaciones**
+- Alertas cuando una divisa alcanza cierto valor
+- Notificaciones push para cambios importantes
+- Newsletter con resúmenes semanales
+
+**4. Configuración personalizada**
+- Tema oscuro/claro
+- Divisa base configurable (no solo EUR)
+- Precisión decimal ajustable
+
+### Siguiente fase de desarrollo
+
+Si tuviera que priorizar las próximas mejoras, empezaría por:
+
+1. **Agregar tests básicos** - Es fundamental para mantener la calidad del código
+2. **Implementar historial** - Añade mucho valor sin complejidad excesiva  
+3. **Mejorar el manejo de errores** - Hace la experiencia mucho más robusta
+4. **Añadir más validaciones** - Como límites máximos, formatos específicos
+
+### Consideraciones técnicas adicionales
+
+**Base de datos**
+Para el historial y configuraciones personalizadas, necesitaríamos una base de datos. PostgreSQL sería una buena opción, con un backend en Node.js/Express.
+
+**Autenticación**
+Si queremos guardar configuraciones por usuario, implementaría autenticación con JWT y tal vez integración con Google/GitHub para facilitar el registro.
+
+**PWA**
+Convertir la app en una Progressive Web App permitiría instalarla en móviles y usar offline con los datos cacheados.
+
+## Instalación y uso
+
+```bash
+npm install
+npm start
+```
+
+## API utilizada
+
+Usamos una API gratuita para las tasas de cambio. En producción sería recomendable tener una clave API para evitar límites de rate limiting.
+
+---
+
+Esta aplicación empezó como un proyecto simple pero tiene potencial para crecer bastante. La base está sólida y la estructura permite agregar funcionalidades sin reescribir todo.

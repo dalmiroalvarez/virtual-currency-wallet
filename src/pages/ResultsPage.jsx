@@ -2,32 +2,73 @@ import { useState, useEffect } from 'react'
 import ResultCard from '../components/ResultCard'
 import { useNavigate } from 'react-router-dom'
 import { fetchExchangeRates } from '../services/api'
+import { saveToLocalStorage ,loadFromLocalStorage } from '../utils/Storage'
 
 const ResultsPage = ({ balance, currencies }) => {
-  const [exchangeRates, setExchangeRates] = useState({})
+  const [exchangeRates, setExchangeRates] = useState(() => {
+    const savedRates = loadFromLocalStorage('exchangeRates')
+    return savedRates || {}
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
+  const [persistedBalance] = useState(() => {
+    return balance || loadFromLocalStorage('walletBalance') || 0
+  })
+
+  const [persistedCurrencies] = useState(() => {
+    return currencies.length > 0 ? currencies : loadFromLocalStorage('selectedCurrencies') || []
+  })
+
   useEffect(() => {
-    if (currencies.length === 0) {
+    if (persistedCurrencies.length === 0) {
       navigate('/')
       return
     }
 
     const loadRates = async () => {
       try {
-        const rates = await fetchExchangeRates(currencies)
+        const cachedRates = loadFromLocalStorage('exchangeRates')
+        const cacheTimestamp = loadFromLocalStorage('exchangeRatesCacheTimestamp')
+        const now = Date.now()
+        const CACHE_DURATION = 2 * 60 * 1000
+
+        if (cachedRates && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION)) {
+          const hasAllRates = persistedCurrencies.every(currency => cachedRates[currency])
+          if (hasAllRates) {
+            setExchangeRates(cachedRates)
+            setIsLoading(false)
+            return
+          }
+        }
+
+        const rates = await fetchExchangeRates(persistedCurrencies)
         setExchangeRates(rates)
+        
+        saveToLocalStorage('exchangeRates', rates)
+        saveToLocalStorage('exchangeRatesCacheTimestamp', now)
+        
       } catch (err) {
-        setError('Error al obtener las tasas de cambio. Intente nuevamente.')
+        const cachedRates = loadFromLocalStorage('exchangeRates')
+        if (cachedRates) {
+          setExchangeRates(cachedRates)
+        } else {
+          setError('Error al obtener las tasas de cambio. Intente nuevamente.')
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
     loadRates()
-  }, [currencies, navigate])
+  }, [persistedCurrencies, navigate])
+
+  useEffect(() => {
+    if (Object.keys(exchangeRates).length > 0) {
+      saveToLocalStorage('exchangeRates', exchangeRates)
+    }
+  }, [exchangeRates])
 
   if (isLoading) {
     return (
@@ -57,16 +98,16 @@ const ResultsPage = ({ balance, currencies }) => {
       
       <div className="mb-6 p-4 bg-gray-100 rounded-md">
         <p className="font-medium text-gray-700">Saldo en EUR:</p>
-        <p className="text-2xl font-bold">€{balance.toFixed(2)}</p>
+        <p className="text-2xl font-bold">€{parseFloat(persistedBalance).toFixed(2)}</p>
       </div>
 
       <div className="space-y-4">
-        {currencies.map(currency => (
+        {persistedCurrencies.map(currency => (
           <ResultCard 
             key={currency}
             currency={currency}
             rate={exchangeRates[currency]}
-            balance={balance}
+            balance={parseFloat(persistedBalance)}
           />
         ))}
       </div>
