@@ -124,7 +124,7 @@ Convertir la app en una Progressive Web App permitiría instalarla en móviles y
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
 ## API utilizada
